@@ -12,7 +12,7 @@ Monster::Monster(std::array<float,2> initPos,std::string name,float speed){
 
 	hiddenTime = INFINITY;
 	hiddenClock = clock();
-	modeTimes[0] = INFINITY;
+	modeTimes[0] = 0;
 	modeTimes[1] = INFINITY;
 	modeTimes[2] = INFINITY;
 }
@@ -202,8 +202,8 @@ void Monster::scatter(const Plate plate){
 }
 void Monster::panic(const Plate plate){
 
-	bool atCenter = (getX() - (size_t) getX()) < 0.55 && (getX() - (size_t) getX()) > 0.45;
-	atCenter = atCenter && (getY() - (size_t) getY()) < 0.55 && (getY() - (size_t) getY()) > 0.45;
+	bool atCenter = (getX() - (size_t) getX()) < 0.6 && (getX() - (size_t) getX()) > 0.4;
+	atCenter = atCenter && (getY() - (size_t) getY()) < 0.6 && (getY() - (size_t) getY()) > 0.4;
 	
 	char c;
 
@@ -211,13 +211,16 @@ void Monster::panic(const Plate plate){
 		bool outOfHouse = true;
 		std::vector<Tile> vt = availableNextTile(plate, outOfHouse);
 
-		int randnbr = rand() % vt.size();
-		std::array<float,2> target;
-		target[0] = vt[randnbr].getX();
-		target[1] = vt[randnbr].getY();
-		setTarget(target);
+		if(vt.size() != 0){
+			int randnbr = rand() % vt.size();
+			std::array<float,2> target;
+			target[0] = vt[randnbr].getX();
+			target[1] = vt[randnbr].getY();
+			setTarget(target);
 
-		c = getDisplacement(plate,outOfHouse);
+			c = getDisplacement(plate,outOfHouse);
+		}else
+			c = lastMove;
 	}else
 	c = lastMove;
 
@@ -368,23 +371,33 @@ float Monster::euclidianDistance(const Tile t) const{
 std::array<float,2> Monster::getSpawn(){
 	return spawn;
 }
-void Monster::updateTimes(size_t nbr){
-	std::cout << " clock " <<hiddenClock << std::endl;
+void Monster::updateTimer(size_t nbr){
+
 	switch(nbr){
 		case 0:
-			modeTimes[0] += ( std::clock() - hiddenClock ) / (float) CLOCKS_PER_SEC;
+			modeTimes[0] -= ( std::clock() - hiddenClock ) / (float) CLOCKS_PER_SEC;
 			break;
 		case 1:
-			modeTimes[1] += ( std::clock() - hiddenClock ) / (float) CLOCKS_PER_SEC;
+			modeTimes[1] -= ( std::clock() - hiddenClock ) / (float) CLOCKS_PER_SEC;
 			break;
 		case 2:
-			modeTimes[2] += ( std::clock() - hiddenClock ) / (float) CLOCKS_PER_SEC;
+			modeTimes[2] -= ( std::clock() - hiddenClock ) / (float) CLOCKS_PER_SEC;
 			break;
 	}
 }
-float Monster::getTime(const size_t nbr) const{
+float Monster::getTimer(const size_t nbr) const{
 	if(nbr < modeTimes.size())
 		return modeTimes[nbr];
 
 	return -1;
+}
+
+void Monster::setTimer(float value){
+	if(!mode.compare("chase"))
+		modeTimes[0] = value;
+	else if(!mode.compare("scatter"))
+		modeTimes[1] = value;
+	else if(!mode.compare("panic"))
+		modeTimes[2] = value;
+	return ;
 }

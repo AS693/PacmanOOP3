@@ -22,8 +22,9 @@ public:
 	float euclidianDistance(const Tile t) const;
 	void setLastMove(const char move);
 	std::array<float,2> getSpawn();
-	void updateTimes(size_t nbr);
-	float getTime(const size_t nbr)const;
+	void updateTimer(size_t nbr);
+	float getTimer(const size_t nbr)const;
+	void setTimer(float value);
 
 	char getDirection() const;
 private:

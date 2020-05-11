@@ -8,6 +8,8 @@ Board::Board(size_t size,float refSpeed){
 	std::array<std::array<float,2>,5> pos = {{ { {20.5,14} } , { {14,12} }, { {17,12} } ,{ {17,14} } , { {17,16} } }};
 	std::array<std::string,4> names = { {"Shadow","Speedy","Bashful","Pokey"} };
 	std::array<sf::Color,5> color =  { {sf::Color(255,255,0),sf::Color(255,0,0),sf::Color(250,197,246),sf::Color(0,255,255),sf::Color(247,187,20)} };
+	std::array<std::string,4> mode = { {"chase","scatter","scatter","scatter"} };
+	std::array<float, 4> timer = {chaseTime + scatterTime, scatterTime, scatterTime, scatterTime};
 
 	pacman = Pacman(pos[0],refSpeed);
 	pacman.setRayon(0.8);
@@ -18,8 +20,8 @@ Board::Board(size_t size,float refSpeed){
 		monsters[i] = Monster(pos[i+1],names[i],0.95*refSpeed);
 		monsters[i].setRayon(1.6);
 		monsters[i].setColor(color[i+1]);
-		monsters[i].setMode("scatter");
-
+		monsters[i].setMode(mode[i]);
+		monsters[i].setTimer(timer[i]);
 	}
 
 }
@@ -49,22 +51,19 @@ bool Board::monsterMove(){
 
 	for(auto monster = monsters.begin();monster != monsters.end();monster++){
 
-		std::cout << monster->getName() << " " << monster->getMode() << std::endl;
-
-		if(monster->getTime(0) > chaseTime && !monster->getMode().compare("chase"))
+		if(monster->getTimer(0) < 0 && !monster->getMode().compare("chase")){
 			monster->setMode("scatter");
+			monster->setTimer(scatterTime);
+		}
 		else
-			monster->updateTimes(0);
+			monster->updateTimer(0);
 
-		if(monster->getTime(1) > scatterTime && !monster->getMode().compare("scatter"))
-			monster->setMode("panic");
-		else
-			monster->updateTimes(1);
-
-		if(monster->getTime(2) > 30 && !monster->getMode().compare("panic"))
+		if(monster->getTimer(1) < 0 && !monster->getMode().compare("scatter")){
 			monster->setMode("chase");
+			monster->setTimer(chaseTime);
+		}
 		else
-			monster->updateTimes(2);
+			monster->updateTimer(1);
 
 		if(monster->getHiddenTime() > hiddenTime){
 
@@ -132,21 +131,21 @@ void Board::playerMove(){
 		roundedPos[1] = (size_t)tmpPos[0];
 		roundedPos[0] = (size_t)tmpPos[1];
 
-		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
+		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && lastShortcut == 'e'){
 			move('l');
 		}
 		
-		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && lastShortcut == 'e')
 		{
 			move('r');
 		}
 		
-		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && lastShortcut == 'e')
 		{
 			move('u');
 		}
 		
-		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && lastShortcut == 'e')
 		{
 			move('d');
 		}
@@ -188,31 +187,40 @@ Pacman Board::getPacman(){
 Tile Board::getTileNext(size_t y, size_t x, char dir)
 {
 	if(dir == 'u')
-		return plate.getTile(y-1, x);
+		return plate.getTile(y - 1, x);
 	else if(dir == 'd')
 		return plate.getTile(y+1, x);
 	else if(dir == 'r')
 		return plate.getTile(y, x+1);
 	else if(dir == 'l')
-		return plate.getTile(y, x -1 );
+		return plate.getTile(y, x - 1);
 
 	return Tile(0, true, (std::array<size_t,2>) {0,0});
 }
 
-bool Board::isCloseEnough(std::array<float,2> p, Tile tile, char dir)
-{
-	if(dir == 'u' || dir == 'd')
-	{
-		float dy = abs(p[0] - (size_t)p[0]);
-		return dy < 0.55 && dy > 0.45;
-	}else{
-		float dx = abs(p[1] - (size_t)p[1]);
-		return dx < 0.55 && dx > 0.45;
-	}
+bool Board::isCloseEnough(std::array<float,2> p, Tile tile, char dir){
+	if(dir == 'u'){
+		float d = p[0] - tile.getY();
+		return d <= 1.5;
+	}else if(dir == 'd'){
+		float d = p[0] - tile.getY();
+		return d >= -0.5;
+	}else if(dir == 'l'){
+		float d = p[1] - tile.getX();
+		return d <= 1.5;
+	}else if(dir == 'r'){
+		float d = p[1] - tile.getX();
+		return d >= -0.5;
+	}else
+		return true;
 }
 
 void Board::move(char dir)
 {
+	if(pacman.isSleeping()){
+		pacman.awake();
+		return ;
+	}
 	/* Index inversion of roundedPos because of the true representation of the grid
 	In the memory of the program */
 	std::array<float,2> tmpPos;
@@ -224,46 +232,78 @@ void Board::move(char dir)
 
 	size_t value = 0;
 	bool aboveCenter = false;
+	bool tooClose = false;
+	float defaultv = pacman.getCurrSpeed();
 
 	Tile next = getTileNext(roundedPos[1], roundedPos[0], dir);
 	Tile usualNext = getTileNext(roundedPos[1], roundedPos[0], pacman.getDirection());
-	
-	std::cout << tmpPos[0] << " " << tmpPos[1] << " | " << usualNext.getX() << " " << usualNext.getY() << std::endl;
 
-	if(isPerpendicular(pacman.getDirection(), dir)){
-		if(pacman.getDirection() == 'u')
-			aboveCenter = usualNext.getY() - tmpPos[0] > 0.5;
-		else if(pacman.getDirection() == 'd')
-			aboveCenter = usualNext.getY() - tmpPos[0] < 0.5;
-		else if(pacman.getDirection() == 'r')
-			aboveCenter = usualNext.getX() - tmpPos[1] < 0.5;
-		else if(pacman.getDirection() == 'l')
-			aboveCenter = usualNext.getX() - tmpPos[1] > 0.5;
-	}
-	//Tile nextSec = getTileNext(roundedPos[1], roundedPos[0], pacmanSecondMove); // à commenter pour enlever le rappel du tournant
+	if(next.isPlayable() && !aboveCenter){
 
- /*if(!nextSec.isWall() && !isCloseEnough(tmpPos, usualNext, pacman.getDirection()) ){ // à enlever pour enlever le rappelle du tournant
+		/* shortcut */
+		if((isBelowCenter(tmpPos, pacman.getDirection()) && isPerpendicular(pacman.getDirection(), dir)) || lastShortcut != 'e'){
 
-		pacman.move(pacmanSecondMove);
-		pacman.setDirection(pacmanSecondMove);
-		pacmanSecondMove = 'e';
-		recenterPacman();
-	
-	}else */if(next.isPlayable() && !aboveCenter){
+			if(lastShortcut == 'e'){
+				lastShortcut = pacman.getDirection();
+				pacman.setDirection(dir);
+			}
 
-		pacman.move(dir);
-		if(pacman.getDirection() != dir){
-			pacman.setDirection(dir);
-			//pacmanSecondMove = 'e';
-			recenterPacman();
-	 	}
+			pacman.setSpeed(defaultv / sqrt(2));
+			pacman.move(lastShortcut);
+			pacman.move(pacman.getDirection());
+
+			pacman.setSpeed(defaultv);
+
+			Tile newNext = getTileNext(roundedPos[1], roundedPos[0], lastShortcut);
+
+			if(isCloseEnough(pacman.getPosition(), newNext, lastShortcut))
+				lastShortcut = 'e';
+			
+		}else{
+			pacman.move(dir);
+			if(pacman.getDirection() != dir)
+				pacman.setDirection(dir);
+		}
 
 	}else{
-		/*
-		if(dir != pacman.getDirection())	
-			pacmanSecondMove = dir;*/
-		if(usualNext.isPlayable() || !isCloseEnough(tmpPos, usualNext, pacman.getDirection()))
+
+		if(usualNext.isPlayable() || !isCloseEnough(tmpPos, usualNext, pacman.getDirection())){
+			
+			/* assure that pacman won't go through a wall if he has a too high speed */
+
+	 		float delta;
+			
+			if(pacman.getDirection() == 'd'){
+
+				delta = (pacman.getX() - usualNext.getY());
+				tooClose = delta > 0.5 && delta > 0.5 + 2*defaultv;
+			
+			}else if(pacman.getDirection() == 'u'){
+			
+				delta = (pacman.getX() - usualNext.getY());
+				tooClose = delta < -0.5 && delta < -0.5 - 2*defaultv;
+				delta *= -1;	
+			
+			}else if(pacman.getDirection() == 'l'){
+			
+				delta = (pacman.getY() - usualNext.getX());
+
+				tooClose = delta < -0.5 && delta < -0.5 - 2*defaultv;
+				delta *= -1;
+
+			}else if(pacman.getDirection() == 'r'){
+			
+				delta = abs(pacman.getY() - usualNext.getX());
+				tooClose = delta > 0.5 && delta < 0.5 + 2*defaultv;
+
+			}
+			if(tooClose){
+				pacman.setSpeed(delta-0.5);
+			}
+
 			pacman.move(pacman.getDirection());
+			pacman.setSpeed(defaultv);
+		}
 	}
 
 
@@ -279,21 +319,25 @@ void Board::move(char dir)
 	}
 }
 
-void Board::recenterPacman(){
+bool Board::isPerpendicular(char x, char y){
 
-	std::array<float,2> pacPos = pacman.getPosition();
+	if(x == 'u' || x == 'd')
+		return y == 'r' || y == 'l';
+	else if(x == 'r' || x == 'l')
+		return y == 'u' || y == 'd';
 
-	if(pacman.getDirection() == 'u' || pacman.getDirection() == 'd')
-		pacPos[1] = (float) ( (size_t) pacPos[1]) + 0.5;
-	else
-		pacPos[0] = (float) ((size_t) pacPos[0]) + 0.5;
-
-	pacman.setPosition(pacPos);
+	return false;
 }
 
-bool Board::isPerpendicular(char x, char y){
-	if(x == 'u' || 'd')
-		return y == 'r' || y == 'l';
-	else
-		return y == 'u' || y == 'r';
+bool Board::isBelowCenter(std::array<float,2> p, char direction){
+
+	if(direction == 'u')
+		return p[0] - (size_t) p[0] > 0.55;
+	else if(direction == 'd')
+		return p[0] - (size_t) p[0] < 0.45;
+	else if(direction == 'l')
+		return p[1] - (size_t) p[1] > 0.55;
+	else if(direction == 'r')
+		return p[1] - (size_t) p[1] < 0.45;
+	return false;
 }

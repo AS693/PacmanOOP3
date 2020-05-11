@@ -7,8 +7,9 @@ Pacman::Pacman(std::array<float,2> initPos,float speed){
 	setHide(false);
 	hiddenTime = INFINITY;
 	hiddenClock = clock();
+	sleep = false;
 }
-size_t Pacman::eat(Plate plateau,std::array<Monster,4> monsterArray) const{
+size_t Pacman::eat(Plate plateau,std::array<Monster,4> monsterArray){
 
 	//place une tolérancesur le centre de la case car vu qu'on est en point flotant,
 	//il peut exister une petite différence dans les positions.
@@ -17,6 +18,7 @@ size_t Pacman::eat(Plate plateau,std::array<Monster,4> monsterArray) const{
 	if(abs(getX()-((size_t)getX() +0.5)) <0.1 || abs(getY()-((size_t)getY()+0.5)) <0.1){
 			
 		if(plateau.getTile((size_t)getX(),(size_t)getY()).isFood()){
+			sleep = true;
 			return 10;
 		}
 
@@ -46,4 +48,13 @@ void Pacman::setDirection(char dir){
 }
 char Pacman::getDirection () const{
 	return direction;
+}
+
+void Pacman::awake(){
+	sleep = false;
+	return ;
+}
+
+bool Pacman::isSleeping(){
+	return sleep;
 }

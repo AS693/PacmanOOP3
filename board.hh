@@ -28,6 +28,7 @@ private:
 	size_t score;
 	size_t tileSize;
 	float refSpeed;
+	char lastShortcut = 'e';
 	const float hiddenTime = 30.0;
 	const float scatterTime = 9.0;
 	const float chaseTime = 30.0;
@@ -36,7 +37,7 @@ private:
 	void move(char);
 	Tile getTileNext(size_t x, size_t y, char dir);
 	bool isCloseEnough(std::array<float,2>, Tile, char);
-	void recenterPacman();
 	bool isPerpendicular(char x, char y);
+	bool isBelowCenter(std::array<float,2> p, char direction);
 };
 #endif
