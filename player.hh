@@ -25,6 +25,7 @@ public:
 	char getType() const ;
 	void setType(char t);
 	void setHide(bool state);
+	bool getHide() const;
 	void setColor(sf::Color color);
 	
 	void updateHiddenClock();
@@ -32,6 +33,7 @@ public:
 	float getHiddenTime();
 
 	virtual char getDirection() const = 0;
+	float getCurrSpeed(); // debuging
 private:
 
 	std::array<float,2> position;

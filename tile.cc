@@ -15,11 +15,11 @@ Tile::Tile(size_t ty,bool wa,const std::array<size_t,2> pos){
 	wall = tile.isWall();
 }
 bool Tile::operator !=(Tile const &tile){
- 	return (position[0] != tile.getX() || position[1] != tile.getY()); //|| type != tile.getType() || wall != tile.isWall());
+ 	return (position[1] != tile.getX() || position[0] != tile.getY() || type != tile.getType() || wall != tile.isWall());
 }
 bool Tile::operator ==(Tile const &tile){
 
- 	return position[0] == tile.getX() && position[1] == tile.getY() && type == tile.getType() && wall == tile.isWall();
+ 	return (position[1] == tile.getX() && position[0] == tile.getY() && type == tile.getType() && wall == tile.isWall());
 }
 size_t Tile::getType() const{
 	return type;

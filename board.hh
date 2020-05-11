@@ -17,7 +17,7 @@ public:
 	Pacman getPacman();
 	void printInPrompt();
 	void playerMove();
-	void monsterMove();
+	bool monsterMove();
 	void monsterOutOfHouse(Monster *monster);
 	void teleport(Player &p);
 	void drawBoard(sf::RenderWindow *window);
@@ -28,10 +28,15 @@ private:
 	size_t score;
 	size_t tileSize;
 	float refSpeed;
-	const float hiddenTime = 100.0;
-	char secondMove;
+	const float hiddenTime = 30.0;
+	const float scatterTime = 9.0;
+	const float chaseTime = 30.0;
+	//char pacmanSecondMove;
 
 	void move(char);
 	Tile getTileNext(size_t x, size_t y, char dir);
+	bool isCloseEnough(std::array<float,2>, Tile, char);
+	void recenterPacman();
+	bool isPerpendicular(char x, char y);
 };
 #endif

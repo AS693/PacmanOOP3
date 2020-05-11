@@ -13,7 +13,7 @@ size_t Pacman::eat(Plate plateau,std::array<Monster,4> monsterArray) const{
 	//place une tolérancesur le centre de la case car vu qu'on est en point flotant,
 	//il peut exister une petite différence dans les positions.
 	//bouffe
-	
+
 	if(abs(getX()-((size_t)getX() +0.5)) <0.1 || abs(getY()-((size_t)getY()+0.5)) <0.1){
 			
 		if(plateau.getTile((size_t)getX(),(size_t)getY()).isFood()){

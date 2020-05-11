@@ -80,11 +80,14 @@ void Player::drawPlayer(sf::RenderWindow *window,size_t tileSize,bool sha) const
 	else{
 		sf::RectangleShape shape(sf::Vector2f(tileSize*rayon,tileSize*rayon));
 		shape.setOrigin(tileSize*getRayon()/2,tileSize*getRayon()/2);
-		shape.setPosition(position[1]*tileSize,(position[0]+0.5)*tileSize);
+		shape.setPosition(position[1]*tileSize,position[0]*tileSize);
 		shape.setFillColor(color);
 		window->draw(shape);
 	}
 }
+}
+bool Player::getHide() const {
+	return hidden;
 }
 
 void Player::updateHiddenClock(){
@@ -97,4 +100,9 @@ void Player::updateHiddenTime(){
 
 float Player::getHiddenTime(){
 	return hiddenTime;
+}
+
+float Player::getCurrSpeed()
+{
+	return currentSpeed;
 }
