@@ -9,16 +9,18 @@
 class Monster : public Player {
 public:
 	Monster() = default;
-	explicit Monster(std::array<float,2> initPos,std::string name,float speed);
+	explicit Monster(std::array<float,2> initPos,std::string name,float speed,sf::Color color);
 	void chase(const Plate plate,const Tile,const Tile shadowTile,const char direction);
 	void scatter(const Plate plate);
+	void returnHouse(const Plate plate);
 	void panic(const Plate plate);
 	std::string getName() const;
+	bool isAtSpawn() const;
 	void setMode(std::string mo);
-	std::string getMode();
+	std::string getMode() const;
 	bool eat(const std::array<float,2> pacPos) const;
 	void setTarget(std::array<float,2> target);
-	char getDisplacement(const Plate plate, const bool outOfHouse) const ;
+	char getDisplacement(const Plate plate, const bool outOfHouse,const bool turnU) const ;
 	float euclidianDistance(const Tile t) const;
 	void setLastMove(const char move);
 	std::array<float,2> getSpawn();
@@ -29,7 +31,7 @@ public:
 	char getDirection() const;
 private:
 	void alignInAisle(const char displacement);
-	std::vector<Tile> availableNextTile(const Plate plate,const bool outOfHouse) const ;
+	std::vector<Tile> availableNextTile(const Plate plate,const bool outOfHouse,const bool turnU) const ;
 	std::array<float,2> spawn;
 	std::array<float,2> target;
 	std::array<float,3> modeTimes;

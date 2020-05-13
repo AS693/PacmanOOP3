@@ -2,6 +2,7 @@
 #define TILE_HH
 #include<cstddef>
 #include<array>
+#include <ctime>
 
 class Tile{
 public:
@@ -26,9 +27,17 @@ public:
 	bool operator ==(Tile const &tile);
 	size_t getX() const;
 	size_t getY() const;
+
+	bool isContaminated() const;
+	void getContaminated();
+	void unContaminate();
+	clock_t getConTime() const;
 private:
 	std::array<size_t,2> position;
 	size_t type;
 	bool wall;
+	bool contaminated;
+
+	std::clock_t contaminatedTime;
 };
 #endif

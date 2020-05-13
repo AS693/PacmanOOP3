@@ -27,6 +27,7 @@ public:
 	void setHide(bool state);
 	bool getHide() const;
 	void setColor(sf::Color color);
+	sf::Color getNominalColor() const;
 	
 	void updateHiddenClock();
 	void updateHiddenTime();
@@ -34,6 +35,16 @@ public:
 
 	virtual char getDirection() const = 0;
 	float getCurrSpeed(); // debuging
+
+	bool isSick() const;
+	bool hasBeenSick() const;
+	bool isContagious() const;
+	void getContaminated();
+	void getContagious();
+	bool sickable() const;
+	void getImmune();
+	void getWeak();
+	float illTime() const;
 private:
 
 	std::array<float,2> position;
@@ -45,11 +56,22 @@ private:
 
 	float rayon;
 	bool hidden;
-	sf::Color color;
+	sf::Color currentColor;
+
+
+	std::clock_t illClock;
+
+	/* sick = true + wasSick = true -> malade
+	   sick = true + wasSick = false -> contagieux
+	   sick = false + wasSick = true -> imunisé
+	   sick = false + wasSick = false -> non malade*/
+	bool sick = false, wasSick = false;
+
 
 protected:
 
 	float hiddenTime;
 	std::clock_t hiddenClock;
+	sf::Color nominalColor;
 };
 #endif

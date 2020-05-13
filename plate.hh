@@ -10,6 +10,7 @@ class Plate{
 public:
 	Plate();
 	Tile getTile(size_t x,size_t y) const;
+	Tile* getTilePointer(size_t x,size_t y);
 
 	void setTile(Tile t);
 	size_t getNbrFood() const;
@@ -23,10 +24,17 @@ public:
 	void refineWall(sf::RenderWindow *window,const Tile *t,size_t tileSize);
 	size_t isAngle(const Tile *t);
 	size_t isLine(const Tile *t);
+
+	void Contaminate(Tile*);
+	void updateSickness();
 private:
 	std::size_t lengthRow;
 	std::size_t lengthCol;
 	std::size_t nbrFood;
 	std::vector<std::vector<Tile>> plat;
+	std::vector<Tile*> listCont;
+
+	float sickTime = 6.0;
+
 };
 #endif

@@ -8,8 +8,8 @@
 class Pacman : public Player {
 public:
 	Pacman() = default;
-	explicit Pacman(std::array<float,2> initPos,float speed);
-	size_t eat(Plate plateau,std::array<Monster,4> monsterArray);
+	explicit Pacman(std::array<float,2> initPos,float speed,sf::Color color);
+	size_t eat(Plate plateau,std::vector<Monster> monsterArray);
 	void setDirection (char dir);
 	char getDirection () const;
 	bool isSleeping();

@@ -1,31 +1,49 @@
 #include"board.hh"
-
+#include "constants.hh"
 Board::Board(size_t size,float refSpeed){
 	plate = Plate();
 	tileSize = size;
 	score=0;
 	this->refSpeed = refSpeed;
-	std::array<std::array<float,2>,5> pos = {{ { {20.5,14} } , { {14,12} }, { {17,12} } ,{ {17,14} } , { {17,16} } }};
+	std::array<std::array<float,2>,5> pos = {{ { {26.5,14} } , { {14,14} }, { {17,12} } ,{ {17,14} } , { {17,16} } }};
 	std::array<std::string,4> names = { {"Shadow","Speedy","Bashful","Pokey"} };
 	std::array<sf::Color,5> color =  { {sf::Color(255,255,0),sf::Color(255,0,0),sf::Color(250,197,246),sf::Color(0,255,255),sf::Color(247,187,20)} };
+	
+	pacman = Pacman(pos[0],refSpeed,color[0]);
+	pacman.setRayon(0.8);
+	std::cout << pacman.getHiddenTime() << std::endl;
+
+	rdmTime = std::rand() % constants::LATEST_VIRUS;
+
+	for(int i=0;i<4;i++){
+		monsters[i] = Monster(pos[i+1],names[i],0.95*refSpeed,color[i+1]);
+		monsters[i].setRayon(1.6);
+		monsters[i].getContagious();
+	}
+
+}
+void Board::activate(){
+
+	start = std::clock();
 	std::array<std::string,4> mode = { {"chase","scatter","scatter","scatter"} };
 	std::array<float, 4> timer = {chaseTime + scatterTime, scatterTime, scatterTime, scatterTime};
 
-	pacman = Pacman(pos[0],refSpeed);
-	pacman.setRayon(0.8);
-	pacman.setColor(color[0]);
-	std::cout << pacman.getHiddenTime() << std::endl;
+	for(int i = 0; i < 4; i++){
 
-	for(int i=0;i<4;i++){
-		monsters[i] = Monster(pos[i+1],names[i],0.95*refSpeed);
-		monsters[i].setRayon(1.6);
-		monsters[i].setColor(color[i+1]);
 		monsters[i].setMode(mode[i]);
 		monsters[i].setTimer(timer[i]);
 	}
 
+	//Launch of shadow && Speedy
+	incIngameMonsters();
+	incIngameMonsters();
+
+	return ;
 }
 
+bool Board::isEnded() const{
+	return gameState == 1 || gameState == -1;
+}
 Plate Board::getPlate(){
 	return plate;
 }
@@ -37,19 +55,108 @@ size_t Board::getTileSize(){
 	return tileSize;
 }
 void Board::drawBoard(sf::RenderWindow *window){
+	size_t k=0;
+
 	plate.drawPlate(window,tileSize);
 	pacman.setColor(sf::Color(255,255,0));
 	pacman.drawPlayer(window,tileSize,true);
 
-	for( auto i = monsters.cbegin(); i!= monsters.cend();i++)
-		i->drawPlayer(window,tileSize,false); 
+	//Draw players that are in game
+	for( auto i = ingameMonsters.cbegin(); i!= ingameMonsters.cend();i++){
+		i->drawPlayer(window,tileSize,false);
+		k++;
+	}
+	//Draw out of the game players.
+	while(k<monsters.size()){
+		monsters[k].drawPlayer(window,tileSize,false);
+		k++;
+	}
 
-
+	drawText(window);
 }
-bool Board::monsterMove(){
+
+void Board::drawText(sf::RenderWindow *window){
+	sf::Font font;
+	font.loadFromFile("press-start-2p-v8-latin-regular.ttf");
+
+	std::string textScore = "";
+	for(float i = score + 0.2; i < 1000; i *= 10)
+		textScore += "0";
+	if(score != 0)
+		textScore += std::to_string(score);
+
+	sf::Text scoreDisplay;
+	scoreDisplay.setString(textScore);
+	scoreDisplay.setFont(font);
+	scoreDisplay.setCharacterSize(tileSize);
+	scoreDisplay.setFillColor(sf::Color(247,192,158));
+
+	float xposition = plate.getLengthCol()/2*tileSize - 2*tileSize;
+ 	scoreDisplay.setPosition(xposition, tileSize);
+
+ 	if(gameState == 1){
+
+		sf::Text win;
+		win.setString("You win!");
+		win.setFont(font);
+		win.setCharacterSize(tileSize);
+		win.setFillColor(sf::Color(247,192,158));
+
+		float x = plate.getLengthCol()/2*tileSize - 4*tileSize;
+		float y = plate.getLengthRow()/2*tileSize + 2*tileSize;
+		std::cout << "x " << x << " y " << y << std::endl;
+		win.setPosition(x, y);
+		window->draw(win);
+
+ 	}else if(gameState == -1){
+
+		sf::Text loose;
+		loose.setString("Too bad!");
+		loose.setFont(font);
+		loose.setCharacterSize(tileSize);
+		loose.setFillColor(sf::Color(247,192,158));
+
+		float x = plate.getLengthCol()/2*tileSize - 4*tileSize;
+		float y = plate.getLengthRow()/2*tileSize + 2*tileSize;
+		loose.setPosition(x, y);
+		window->draw(loose);
+
+ 	}else if(gameState == 2){
+
+		sf::Text ready;
+		ready.setString("Ready?!");
+		ready.setFont(font);
+		ready.setCharacterSize(tileSize);
+		ready.setFillColor(sf::Color(247,192,158));
+
+		float x = plate.getLengthCol()/2*tileSize - 3.5*tileSize;
+		float y = plate.getLengthRow()/2*tileSize + 2*tileSize;
+		ready.setPosition(x, y);
+		window->draw(ready);
+ 	}
 
 
-	for(auto monster = monsters.begin();monster != monsters.end();monster++){
+	window->draw(scoreDisplay);
+}
+void Board::incIngameMonsters(){
+
+	if(ingameMonsters.size()<= monsters.size())
+		ingameMonsters.push_back(monsters[ingameMonsters.size()]);
+	
+}
+void Board::monsterMove(){
+
+	if(gameState != 0)
+		return ;
+
+	timePlayed = ( std::clock() - start ) / (float) CLOCKS_PER_SEC;
+
+	if((score == 30 || timePlayed== 15.0) || (score == plate.getNbrFood()/3) || (timePlayed == 60))
+		incIngameMonsters();
+
+	for(auto monster = ingameMonsters.begin();monster != ingameMonsters.end();monster++){
+
+		Tile* monsterTile = plate.getTilePointer((size_t)monster->getX(),(size_t)monster->getY());
 
 		if(monster->getTimer(0) < 0 && !monster->getMode().compare("chase")){
 			monster->setMode("scatter");
@@ -65,31 +172,64 @@ bool Board::monsterMove(){
 		else
 			monster->updateTimer(1);
 
+		if(monster->getTimer(2) < 0 && !monster->getMode().compare("panic")){
+			monster->setMode("panic");
+
+			if(monster->getTimer(2)<=0.5)
+				monster->setColor(sf::Color(255,255,255));
+
+			if(monster->getTimer(2)==0)
+				monster->setMode("chase");
+		}
+		else
+			monster->updateTimer(2);
+
 		if(monster->getHiddenTime() > hiddenTime){
 
-			monster->setSpeed(0.95*refSpeed);
-			monster->setHide(false);
 
-			if(plate.getTile((size_t)monster->getX(),(size_t)monster->getY()).isTunnel()){
+			if(monster->isSick())
+				monster->setSpeed(0.2*refSpeed);
+
+			else if(monsterTile->isTunnel()){
 				monster->setSpeed(0.55*monster->getSpeed());
 				teleport(*monster);
 			}
-
-			if(plate.getTile((size_t)monster->getX(),(size_t)monster->getY()).isFantomHouse())
-				monsterOutOfHouse(monster);
-
-			if(!monster->getMode().compare("chase") && !plate.getTile((size_t)monster->getX(),(size_t)monster->getY()).isFantomHouse()){
-				monster->chase(plate,plate.getTile((size_t)pacman.getX(),(size_t)pacman.getY()),plate.getTile((size_t)monsters[0].getX(),(size_t)monsters[0].getY()),pacman.getDirection());
+			else{
+				monster->setSpeed(0.95*refSpeed);
+				monster->setHide(false);
 			}
 
-			if(!monster->getMode().compare("scatter") && !plate.getTile((size_t)monster->getX(),(size_t)monster->getY()).isFantomHouse())
+			if(monsterTile->isFantomHouse())
+				monsterOutOfHouse(*monster);
+
+			if(!monster->getMode().compare("chase") && !monsterTile->isFantomHouse()){
+				monster->chase(plate,plate.getTile((size_t)pacman.getX(),(size_t)pacman.getY()),*monsterTile,pacman.getDirection());
+			}
+
+			if(!monster->getMode().compare("scatter") && !monsterTile->isFantomHouse())
 				monster->scatter(plate);
 
-			if(!monster->getMode().compare("panic") && !plate.getTile((size_t)monster->getX(),(size_t)monster->getY()).isFantomHouse())
+			if(!monster->getMode().compare("eaten")){
+				monster->returnHouse(plate);
+				monster->setSpeed(1.3*refSpeed);
+
+				if(monster->isAtSpawn())
+					monster->setMode("chase");
+			}
+
+			if(!monster->getMode().compare("panic") && !monsterTile->isFantomHouse())
 				monster->panic(plate);
 
-			if(monster->eat(pacman.getPosition()) && !monster->getHide())
-				return true;
+			if(!monster->getMode().compare("scatter") || !monster->getMode().compare("chase"))
+				monster->setColor(monster->getNominalColor());
+
+			if(monster->eat(pacman.getPosition()) && !monster->getHide() && (!monster->getMode().compare("scatter") || !monster->getMode().compare("chase"))){
+				gameState = -1;
+				return ;
+			}
+
+			if(monster->isContagious())
+				plate.Contaminate(monsterTile);
 
 			monster->updateHiddenClock();
 
@@ -99,12 +239,13 @@ bool Board::monsterMove(){
 
 	}
 
+	updateSickness();
 
-	return false;
+	return ;
 }
-void Board::monsterOutOfHouse(Monster *monster) {
+void Board::monsterOutOfHouse(Monster &monster) {
 	// Don't care about 3 argument, because it's not needed
-	monster->chase(plate,plate.getTile(14,14),plate.getTile(14,14),'o');
+	monster.chase(plate,plate.getTile(14,14),plate.getTile(14,14),'o');
 }
 void Board::teleport(Player &p){
 
@@ -132,21 +273,40 @@ void Board::playerMove(){
 		roundedPos[0] = (size_t)tmpPos[1];
 
 		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && lastShortcut == 'e'){
+			
+			if(gameState == 2){
+				gameState = 0;
+				activate();
+			}
+			
 			move('l');
 		}
 		
 		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && lastShortcut == 'e')
 		{
+			if(gameState == 2){
+				gameState = 0;
+				activate();
+			}
+
 			move('r');
 		}
 		
 		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && lastShortcut == 'e')
 		{
+			if(gameState == 2){
+				gameState = 0;
+				activate();
+			}
 			move('u');
 		}
 		
 		else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && lastShortcut == 'e')
 		{
+			if(gameState == 2){
+				gameState = 0;
+				activate();
+			}
 			move('d');
 		}
 		else
@@ -154,9 +314,8 @@ void Board::playerMove(){
 			move(pacman.getDirection());
 		}
 		if(plate.getTile(roundedPos[1],roundedPos[0]).isTunnel()){
-			pacman.setSpeed(0.55*pacman.getSpeed());
 			teleport(pacman);
-		}else{		pacman.setSpeed(pacman.getSpeed());}
+		}
 
 		pacman.updateHiddenClock();
 	}else{
@@ -217,10 +376,18 @@ bool Board::isCloseEnough(std::array<float,2> p, Tile tile, char dir){
 
 void Board::move(char dir)
 {
+	if(gameState != 0)
+		return ;
+
 	if(pacman.isSleeping()){
 		pacman.awake();
 		return ;
 	}
+
+	if(pacman.isSick())
+		pacman.setSpeed(0.2*pacman.getSpeed());
+	else 
+		pacman.setSpeed(pacman.getSpeed());
 	/* Index inversion of roundedPos because of the true representation of the grid
 	In the memory of the program */
 	std::array<float,2> tmpPos;
@@ -306,17 +473,37 @@ void Board::move(char dir)
 		}
 	}
 
-
-
-	value = pacman.eat(plate,monsters);
+	value = pacman.eat(plate,ingameMonsters);
+	std::cout << value << std::endl;
 	if(value){
 		score+= value;
 		if(value <= 50){
 			Tile tile(0,false,roundedPos);
 			plate.setTile(tile);
 			plate.decountFood();
-		}		
+
+			if(value == 50){
+				for(auto i=ingameMonsters.begin();i!=ingameMonsters.end();i++){
+						i->setMode("panic");
+						i->setColor(sf::Color(0,0,255));
+						i->setTimer(panicTime);
+				}
+			}
+		}	
+		if(value == 100){
+
+			for(auto i=ingameMonsters.begin();i!=ingameMonsters.end();i++){
+				if((abs(pacman.getX()-i->getX()) <0.1 && abs(pacman.getY()-i->getY()) <0.1) && !i->getMode().compare("panic")){
+					i->setMode("eaten");
+					i->setColor(sf::Color(0,0,255,127));
+					i->setSpeed(1.3*refSpeed);
+				}
+			}
+		}
 	}
+
+	if(plate.getNbrFood() == 0)
+		gameState = 1;
 }
 
 bool Board::isPerpendicular(char x, char y){
@@ -340,4 +527,64 @@ bool Board::isBelowCenter(std::array<float,2> p, char direction){
 	else if(direction == 'r')
 		return p[1] - (size_t) p[1] < 0.45;
 	return false;
+}
+
+void Board::updateSickness(){
+
+	if(!plague && rdmTime == (size_t) timePlayed){
+
+		unsigned int i = std::rand() % 4;
+		if(i > ingameMonsters.size())
+			monsters[i].getContagious();
+		else
+			ingameMonsters[i].getContagious();
+		plague = true;
+	}
+
+	plate.updateSickness();
+
+	for(auto monster = monsters.begin(); monster < monsters.end(); monster++){
+		std::cout << monster->getName() << std::endl;
+		Tile monsterTile = plate.getTile((size_t)monster->getX(),(size_t)monster->getY());
+		
+		if(monster->isContagious() && !monster->isSick()){
+		
+			if(monster->illTime() > contTime)
+				monster->getContaminated();
+		
+		}else if(monster->isSick() && monster->illTime() > sickTime)
+			monster->getImmune();
+
+		else if(monster->sickable() && monsterTile.isContaminated())
+			monster->getContagious();
+	}
+
+	for(auto monster = ingameMonsters.begin(); monster < ingameMonsters.end(); monster++){
+		std::cout << monster->getName() << std::endl;
+		Tile monsterTile = plate.getTile((size_t)monster->getX(),(size_t)monster->getY());
+		
+		if(monster->isContagious() && !monster->isSick()){
+		
+			if(monster->illTime() > contTime)
+				monster->getContaminated();
+		
+		}else if(monster->isSick() && monster->illTime() > sickTime)
+			monster->getImmune();
+
+		else if(monster->sickable() && monsterTile.isContaminated())
+			monster->getContagious();
+	}
+
+	Tile pacTile = plate.getTile((size_t)pacman.getX(),(size_t)pacman.getY());
+	
+	if(pacman.isContagious() && !pacman.isSick()){
+	
+		if(pacman.illTime() > contTime)
+			pacman.getContaminated();
+	
+	}else if(pacman.isSick() && pacman.illTime() > sickTime)
+		pacman.getImmune();
+
+	else if(pacman.sickable() && pacTile.isContaminated())
+		pacman.getContagious();
 }

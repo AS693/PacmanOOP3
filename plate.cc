@@ -1,5 +1,7 @@
 #include"plate.hh"
 #include<iostream>
+#include "constants.hh"
+
 Plate::Plate(){
 	Loader loader;
 	plat = loader.loadPlate();
@@ -20,6 +22,12 @@ Tile Plate::getTile(size_t x,size_t y) const{
 	
 	return plat[x][y];
 }
+
+Tile* Plate::getTilePointer(size_t x,size_t y){
+
+	return &plat[x][y];
+}
+
 void Plate::decountFood(){
 	nbrFood--;
 }
@@ -34,11 +42,15 @@ void Plate::drawPlate(sf::RenderWindow *window,size_t tileSize){
 			for(size_t j=0; j<lengthCol;j++){
 				auto t = plat[i][j];
 
-
 				if(t.isFood()){
 					sf::CircleShape cercle(tileSize/6);
 					cercle.setPosition(j*tileSize+tileSize/3,i*tileSize+tileSize/3);
-					cercle.setFillColor(sf::Color(247,192,158));
+
+					if(t.isContaminated() && constants::DEBUG)
+						cercle.setFillColor(sf::Color(255,0,255));
+					else	
+						cercle.setFillColor(sf::Color(247,192,158));
+
 					window->draw(cercle);
 				}
 				if(t.isWall()){
@@ -61,7 +73,12 @@ void Plate::drawPlate(sf::RenderWindow *window,size_t tileSize){
 				if(t.isPilz()){
 					sf::CircleShape cercle(tileSize/2);
 					cercle.setPosition(j*tileSize,i*tileSize);
-					cercle.setFillColor(sf::Color(247,192,158));
+
+					if(t.isContaminated() && constants::DEBUG)
+						cercle.setFillColor(sf::Color(255,0,255));
+					else	
+						cercle.setFillColor(sf::Color(247,192,158));
+
 					window->draw(cercle);
 				}
 				if(t.isFantomHouse()){
@@ -71,19 +88,21 @@ void Plate::drawPlate(sf::RenderWindow *window,size_t tileSize){
 					window->draw(rectangle);
 				}
 				//Trace les lignes blanches entre les cases à supprimer plus tard
-				sf::VertexArray line(sf::LineStrip,2);
-				line[0].position = sf::Vector2f(j*tileSize,i*tileSize);
-				line[1].position = sf::Vector2f((j+1)*tileSize,i*tileSize);
-				window->draw(line);
-				line[0].position = sf::Vector2f(j*tileSize,i*tileSize);
-				line[1].position = sf::Vector2f(j*tileSize,(i+1)*tileSize);
-				window->draw(line);
-				line[0].position = sf::Vector2f((j+1)*tileSize,i*tileSize);
-				line[1].position = sf::Vector2f((j+1)*tileSize,(i+1)*tileSize);
-				window->draw(line);
-				line[0].position = sf::Vector2f(j*tileSize,(i+1)*tileSize);
-				line[1].position = sf::Vector2f((j+1)*tileSize,(i+1)*tileSize);
-				window->draw(line);
+				if(constants::DEBUG){
+					sf::VertexArray line(sf::LineStrip,2);
+					line[0].position = sf::Vector2f(j*tileSize,i*tileSize);
+					line[1].position = sf::Vector2f((j+1)*tileSize,i*tileSize);
+					window->draw(line);
+					line[0].position = sf::Vector2f(j*tileSize,i*tileSize);
+					line[1].position = sf::Vector2f(j*tileSize,(i+1)*tileSize);
+					window->draw(line);
+					line[0].position = sf::Vector2f((j+1)*tileSize,i*tileSize);
+					line[1].position = sf::Vector2f((j+1)*tileSize,(i+1)*tileSize);
+					window->draw(line);
+					line[0].position = sf::Vector2f(j*tileSize,(i+1)*tileSize);
+					line[1].position = sf::Vector2f((j+1)*tileSize,(i+1)*tileSize);
+					window->draw(line);
+				}
 			}
 
 
@@ -308,4 +327,23 @@ void Plate::refineWall(sf::RenderWindow *window,const Tile *t,size_t tileSize){
 	else
 		drawCorner(window,t,tileSize);
 
+}
+
+void Plate::Contaminate(Tile* t){
+	t->getContaminated();
+	listCont.push_back(t);
+}
+
+void Plate::updateSickness(){
+
+	for(size_t i = 0; i < listCont.size(); i++){
+
+		float time = ( std::clock() - listCont[i]->getConTime() ) / (float) CLOCKS_PER_SEC;
+
+		if(time > sickTime){
+			listCont[i]->unContaminate();
+			listCont.erase(listCont.begin() + i);
+			i--;
+		}
+	}
 }
