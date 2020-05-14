@@ -18,7 +18,7 @@ Board::Board(size_t size,float refSpeed){
 	for(int i=0;i<4;i++){
 		monsters[i] = Monster(pos[i+1],names[i],0.95*refSpeed,color[i+1]);
 		monsters[i].setRayon(1.6);
-		monsters[i].getContagious();
+		//monsters[i].getContagious();
 	}
 
 }
@@ -104,7 +104,6 @@ void Board::drawText(sf::RenderWindow *window){
 
 		float x = plate.getLengthCol()/2*tileSize - 4*tileSize;
 		float y = plate.getLengthRow()/2*tileSize + 2*tileSize;
-		std::cout << "x " << x << " y " << y << std::endl;
 		win.setPosition(x, y);
 		window->draw(win);
 
@@ -140,7 +139,7 @@ void Board::drawText(sf::RenderWindow *window){
 }
 void Board::incIngameMonsters(){
 
-	if(ingameMonsters.size()<= monsters.size())
+	if(ingameMonsters.size()< monsters.size())
 		ingameMonsters.push_back(monsters[ingameMonsters.size()]);
 	
 }
@@ -186,6 +185,7 @@ void Board::monsterMove(){
 
 		if(monster->getHiddenTime() > hiddenTime){
 
+			monster->setHide(false);
 
 			if(monster->isSick())
 				monster->setSpeed(0.2*refSpeed);
@@ -196,7 +196,6 @@ void Board::monsterMove(){
 			}
 			else{
 				monster->setSpeed(0.95*refSpeed);
-				monster->setHide(false);
 			}
 
 			if(monsterTile->isFantomHouse())
@@ -213,8 +212,10 @@ void Board::monsterMove(){
 				monster->returnHouse(plate);
 				monster->setSpeed(1.3*refSpeed);
 
-				if(monster->isAtSpawn())
+				if(monster->isAtSpawn()){
+					monster->getWeak();
 					monster->setMode("chase");
+				}
 			}
 
 			if(!monster->getMode().compare("panic") && !monsterTile->isFantomHouse())
@@ -398,14 +399,13 @@ void Board::move(char dir)
 	roundedPos[0] = (size_t)tmpPos[1];
 
 	size_t value = 0;
-	bool aboveCenter = false;
 	bool tooClose = false;
 	float defaultv = pacman.getCurrSpeed();
 
 	Tile next = getTileNext(roundedPos[1], roundedPos[0], dir);
 	Tile usualNext = getTileNext(roundedPos[1], roundedPos[0], pacman.getDirection());
 
-	if(next.isPlayable() && !aboveCenter){
+	if(next.isPlayable()){
 
 		/* shortcut */
 		if((isBelowCenter(tmpPos, pacman.getDirection()) && isPerpendicular(pacman.getDirection(), dir)) || lastShortcut != 'e'){
@@ -474,11 +474,16 @@ void Board::move(char dir)
 	}
 
 	value = pacman.eat(plate,ingameMonsters);
-	std::cout << value << std::endl;
+
+	std::array<size_t,2> newRoundedPos;
+
+	newRoundedPos[0] = (size_t) pacman.getY();
+	newRoundedPos[1] = (size_t) pacman.getX();
+
 	if(value){
 		score+= value;
 		if(value <= 50){
-			Tile tile(0,false,roundedPos);
+			Tile tile(0,false,newRoundedPos);
 			plate.setTile(tile);
 			plate.decountFood();
 
@@ -493,8 +498,9 @@ void Board::move(char dir)
 		if(value == 100){
 
 			for(auto i=ingameMonsters.begin();i!=ingameMonsters.end();i++){
-				if((abs(pacman.getX()-i->getX()) <0.1 && abs(pacman.getY()-i->getY()) <0.1) && !i->getMode().compare("panic")){
+				if((abs(pacman.getX()-i->getX()) <0.5 && abs(pacman.getY()-i->getY()) <0.5) && !i->getMode().compare("panic")){
 					i->setMode("eaten");
+					i->getImmune();
 					i->setColor(sf::Color(0,0,255,127));
 					i->setSpeed(1.3*refSpeed);
 				}
@@ -544,7 +550,7 @@ void Board::updateSickness(){
 	plate.updateSickness();
 
 	for(auto monster = monsters.begin(); monster < monsters.end(); monster++){
-		std::cout << monster->getName() << std::endl;
+
 		Tile monsterTile = plate.getTile((size_t)monster->getX(),(size_t)monster->getY());
 		
 		if(monster->isContagious() && !monster->isSick()){
@@ -560,7 +566,7 @@ void Board::updateSickness(){
 	}
 
 	for(auto monster = ingameMonsters.begin(); monster < ingameMonsters.end(); monster++){
-		std::cout << monster->getName() << std::endl;
+
 		Tile monsterTile = plate.getTile((size_t)monster->getX(),(size_t)monster->getY());
 		
 		if(monster->isContagious() && !monster->isSick()){

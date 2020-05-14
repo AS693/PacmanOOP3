@@ -27,7 +27,7 @@ char Monster::getDirection() const{
 }
 bool Monster::eat(const std::array<float,2> pacPos)const{
 	//if their centers are the same, collision occurs and pacman gets eaten
-	if(abs(getX()-(pacPos[0])) <0.1 && abs(getY()-pacPos[1]) <0.1){
+	if(abs(getX()-(pacPos[0])) <0.5 && abs(getY()-pacPos[1]) <0.5){
 		return true;
 	}
 

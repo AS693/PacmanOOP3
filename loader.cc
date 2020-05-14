@@ -29,7 +29,6 @@ std::vector<std::vector<Tile>> Loader::loadPlate(){
 			}
 			if(buffer[nbrRow] == 'T'){
 				tile.setType(3);
-				countedFood++;
 			}
 			//Hors du maze
 			if(buffer[nbrRow] == 'o'){

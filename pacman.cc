@@ -19,7 +19,7 @@ size_t Pacman::eat(Plate plateau,std::vector<Monster> monsterArray){
 
 	Tile curr = plateau.getTile((size_t)getX(),(size_t)getY());
 
-	if(abs(getX()-((size_t)getX() +0.5)) <0.1 || abs(getY()-((size_t)getY()+0.5)) <0.1){
+	if(abs(getX()-((size_t)getX() +0.5)) <0.5 || abs(getY()-((size_t)getY()+0.5)) <0.5){
 			
 		if(curr.isFood()){
 			sleep = true;
@@ -43,8 +43,6 @@ size_t Pacman::eat(Plate plateau,std::vector<Monster> monsterArray){
 
 			if(i->isContagious())
 				getContagious();
-
-			i->getWeak();
 			return 100;
 		}
 	}

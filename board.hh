@@ -37,20 +37,19 @@ private:
 	float refSpeed;
 	char lastShortcut = 'e';
 
-	const float hiddenTime = 30.0;
-	const float scatterTime = 9.0;
-	const float chaseTime = 30.0;
-	const float panicTime = 7.0;
+	float hiddenTime = 30.0;
+	float scatterTime = 9.0;
+	float chaseTime = 30.0;
+	float panicTime = 7.0;
 
 	float timePlayed = 0.0;
 	std::clock_t start;
 
-	const float contTime = 20.0;
-	const float sickTime = 10.0;
+	float contTime = 20.0;
+	float sickTime = 10.0;
 	size_t rdmTime;
 	bool plague = false;
 	short int gameState = 2;
-	//char pacmanSecondMove;
 
 	void move(char);
 	Tile getTileNext(size_t x, size_t y, char dir);

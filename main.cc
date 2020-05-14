@@ -9,7 +9,7 @@
 #include "constants.hh"
 
 int main(){
-	Plate plate;
+//	Plate plate;
 	Board board(constants::CELL_SIZE, 0.16);
 	sf::RenderWindow window(sf::VideoMode(board.getPlate().getLengthCol()*board.getTileSize(),board.getPlate().getLengthRow()*board.getTileSize()),"Pacorona");
 	size_t k=0;
@@ -19,6 +19,9 @@ int main(){
 		sf::Event event;
 
 		window.clear();
+		if(sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+			board = Board(constants::CELL_SIZE, 0.16);
+
 		board.drawBoard(&window);
 	
 		if(!board.isEnded()){
