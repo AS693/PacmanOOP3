@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include"board.hh"
 #include"plate.hh"
-#include "constants.hh"
+#include "constants.hpp"
 
 int main(){
 //	Plate plate;

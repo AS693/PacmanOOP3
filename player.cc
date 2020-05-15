@@ -1,5 +1,5 @@
 #include"player.hh"
-#include "constants.hh"
+#include "constants.hpp"
 
 Player::Player(char ty,std::array<float,2> initPos){
 	type=ty;

@@ -1,5 +1,5 @@
 #include"board.hh"
-#include "constants.hh"
+#include "constants.hpp"
 Board::Board(size_t size,float refSpeed){
 	plate = Plate();
 	tileSize = size;
@@ -18,7 +18,6 @@ Board::Board(size_t size,float refSpeed){
 	for(int i=0;i<4;i++){
 		monsters[i] = Monster(pos[i+1],names[i],0.95*refSpeed,color[i+1]);
 		monsters[i].setRayon(1.6);
-		//monsters[i].getContagious();
 	}
 
 }
@@ -150,7 +149,9 @@ void Board::monsterMove(){
 
 	timePlayed = ( std::clock() - start ) / (float) CLOCKS_PER_SEC;
 
-	if((score == 30 || timePlayed== 15.0) || (score == plate.getNbrFood()/3) || (timePlayed == 60))
+	bool bashfulOut = (plate.getNbrFood() == 244-30 || (size_t) timePlayed == 15) && ingameMonsters.size() == 2;
+	bool pokeyOut = (244-82 == plate.getNbrFood() || (size_t)timePlayed == 60) && ingameMonsters.size() == 3;
+	if(pokeyOut ||bashfulOut )
 		incIngameMonsters();
 
 	for(auto monster = ingameMonsters.begin();monster != ingameMonsters.end();monster++){
@@ -209,8 +210,8 @@ void Board::monsterMove(){
 				monster->scatter(plate);
 
 			if(!monster->getMode().compare("eaten")){
-				monster->returnHouse(plate);
 				monster->setSpeed(1.3*refSpeed);
+				monster->returnHouse(plate);
 
 				if(monster->isAtSpawn()){
 					monster->getWeak();

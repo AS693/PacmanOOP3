@@ -1,6 +1,6 @@
 #include"plate.hh"
 #include<iostream>
-#include "constants.hh"
+#include "constants.hpp"
 
 Plate::Plate(){
 	Loader loader;
@@ -86,6 +86,12 @@ void Plate::drawPlate(sf::RenderWindow *window,size_t tileSize){
 					rectangle.setPosition(j*tileSize,(i+0.5)*tileSize);
 					rectangle.setFillColor(sf::Color(0,0,0));
 					window->draw(rectangle);
+				}
+				if(t.getY() == 15 && (t.getX() == 13 || t.getX() == 14)){
+					sf::RectangleShape rectangle2(sf::Vector2f(tileSize,tileSize/2));
+					rectangle2.setPosition(j*tileSize,(i+0.5)*tileSize);
+					rectangle2.setFillColor(sf::Color(255,255,255));
+					window->draw(rectangle2);
 				}
 				//Trace les lignes blanches entre les cases à supprimer plus tard
 				if(constants::DEBUG){

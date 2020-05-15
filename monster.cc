@@ -150,7 +150,8 @@ void Monster::scatter(const Plate plate){
 		target[0] = 0;
 		target[1] = 36;
 	}
-
+	
+	setTarget(target);
 	char c = getDisplacement(plate,false,false);
 	move(c);
 	alignInAisle(c);
@@ -164,16 +165,16 @@ void Monster::scatter(const Plate plate){
 void Monster::returnHouse(const Plate plate){
 	std::array<float,2> target;
 
-	target[0] =12;
+	target[0] =12-2;
 	target[1] =17;
 	setTarget(target);
-	char c = getDisplacement(plate,true,true);
+	char c = getDisplacement(plate,true,false);
 	move(c);
 	alignInAisle(c);
 	setLastMove(c);
 
-	if(!(plate.getTile((size_t)getX(),(size_t)getY()).isPlayable() || plate.getTile((size_t)getX(),(size_t)getY()).isFantomHouse()))
-		move(opposite(c));
+	//if(!(plate.getTile((size_t)getX(),(size_t)getY()).isPlayable() || plate.getTile((size_t)getX(),(size_t)getY()).isFantomHouse()))
+	//	move(opposite(c));
 	
 }
 
@@ -269,7 +270,6 @@ char Monster::getDisplacement(const Plate plate,const bool outOfHouse,const bool
 
 			if((size_t)getX()+1 == i->getY() )
 				displacement ='d';
-			
 		}
 	}
 
@@ -283,53 +283,38 @@ std::vector<Tile> Monster::availableNextTile(const Plate plate,const bool outOfH
 
 
 			if((plate.getTile((size_t)getX(),(size_t)getY()-1).isPlayable() ||plate.getTile((size_t)getX(),(size_t)getY()-1).isFantomHouse())
-				&& lastMove != 'r')
+				&& (lastMove != 'r' || turnU))
 				vect.push_back(plate.getTile((size_t)getX(),(size_t)getY()-1));
 
 			if((plate.getTile((size_t)getX()+1,(size_t)getY()).isPlayable() || plate.getTile((size_t)getX()+1,(size_t)getY()).isFantomHouse()) 
-				&& lastMove != 'u' )
+				&& (lastMove != 'u' || turnU))
 				vect.push_back(plate.getTile((size_t)getX()+1,(size_t)getY()));
 
 			if((plate.getTile((size_t)getX(),(size_t)getY()+1).isPlayable() || plate.getTile((size_t)getX(),(size_t)getY()+1).isFantomHouse()) 
-				&& lastMove != 'l' )
+				&& (lastMove != 'l' || turnU))
 				vect.push_back(plate.getTile((size_t)getX(),(size_t)getY()+1));
 
 			if((plate.getTile((size_t)getX()-1,(size_t)getY()).isPlayable() || plate.getTile((size_t)getX()-1,(size_t)getY()).isFantomHouse())
-				&& lastMove != 'd' )
-				vect.push_back(plate.getTile((size_t)getX()-1,(size_t)getY()));
-		
-		}
-
-	else if(turnU){
-
-			if(plate.getTile((size_t)getX(),(size_t)getY()-1).isPlayable() && lastMove != 'r' )
-				vect.push_back(plate.getTile((size_t)getX(),(size_t)getY()-1));
-
-			if(plate.getTile((size_t)getX()+1,(size_t)getY()).isPlayable() && lastMove != 'u')
-				vect.push_back(plate.getTile((size_t)getX()+1,(size_t)getY()));
-
-			if(plate.getTile((size_t)getX(),(size_t)getY()+1).isPlayable() && lastMove != 'l')
-				vect.push_back(plate.getTile((size_t)getX(),(size_t)getY()+1));
-
-			
-			if(plate.getTile((size_t)getX()-1,(size_t)getY()).isPlayable() && lastMove != 'd' )
+				&& (lastMove != 'd' || turnU))
 				vect.push_back(plate.getTile((size_t)getX()-1,(size_t)getY()));
 
 		}
+
 	else{
-		if(plate.getTile((size_t)getX(),(size_t)getY()-1).isPlayable())
+
+
+			if(plate.getTile((size_t)getX(),(size_t)getY()-1).isPlayable() && (lastMove != 'r' || turnU))
 				vect.push_back(plate.getTile((size_t)getX(),(size_t)getY()-1));
 
-			if(plate.getTile((size_t)getX()+1,(size_t)getY()).isPlayable())
+			if(plate.getTile((size_t)getX()+1,(size_t)getY()).isPlayable() && (lastMove != 'u' || turnU))
 				vect.push_back(plate.getTile((size_t)getX()+1,(size_t)getY()));
 
-			if(plate.getTile((size_t)getX(),(size_t)getY()+1).isPlayable())
+			if(plate.getTile((size_t)getX(),(size_t)getY()+1).isPlayable() && (lastMove != 'l' || turnU))
 				vect.push_back(plate.getTile((size_t)getX(),(size_t)getY()+1));
 
 			
-			if(plate.getTile((size_t)getX()-1,(size_t)getY()).isPlayable())
+			if(plate.getTile((size_t)getX()-1,(size_t)getY()).isPlayable() && (lastMove != 'd' || turnU))
 				vect.push_back(plate.getTile((size_t)getX()-1,(size_t)getY()));
-
 		}
 
 

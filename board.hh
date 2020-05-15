@@ -46,7 +46,7 @@ private:
 	std::clock_t start;
 
 	float contTime = 20.0;
-	float sickTime = 10.0;
+	float sickTime = 30.0;
 	size_t rdmTime;
 	bool plague = false;
 	short int gameState = 2;
