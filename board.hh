@@ -37,7 +37,7 @@ private:
 	float refSpeed;
 	char lastShortcut = 'e';
 
-	float hiddenTime = 30.0;
+	float hiddenTime = 2.0;
 	float scatterTime = 9.0;
 	float chaseTime = 30.0;
 	float panicTime = 7.0;
@@ -46,7 +46,7 @@ private:
 	std::clock_t start;
 
 	float contTime = 20.0;
-	float sickTime = 30.0;
+	float sickTime = 10.0;
 	size_t rdmTime;
 	bool plague = false;
 	short int gameState = 2;
@@ -55,7 +55,7 @@ private:
 	Tile getTileNext(size_t x, size_t y, char dir);
 	bool isCloseEnough(std::array<float,2>, Tile, char);
 	bool isPerpendicular(char x, char y);
-	bool isBelowCenter(std::array<float,2> p, char direction);
+	bool isBelowCenter(std::array<float,2> p, char direction, float tolerance);
 	void updateSickness();
 	void activate();
 	void drawText(sf::RenderWindow *window);

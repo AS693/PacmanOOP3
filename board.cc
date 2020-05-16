@@ -151,36 +151,32 @@ void Board::monsterMove(){
 
 	bool bashfulOut = (plate.getNbrFood() == 244-30 || (size_t) timePlayed == 15) && ingameMonsters.size() == 2;
 	bool pokeyOut = (244-82 == plate.getNbrFood() || (size_t)timePlayed == 60) && ingameMonsters.size() == 3;
+
 	if(pokeyOut ||bashfulOut )
 		incIngameMonsters();
 
 	for(auto monster = ingameMonsters.begin();monster != ingameMonsters.end();monster++){
 
 		Tile* monsterTile = plate.getTilePointer((size_t)monster->getX(),(size_t)monster->getY());
-
 		if(monster->getTimer(0) < 0 && !monster->getMode().compare("chase")){
 			monster->setMode("scatter");
 			monster->setTimer(scatterTime);
 		}
-		else
+		else if(monster->getMode().compare("panic"))
 			monster->updateTimer(0);
 
 		if(monster->getTimer(1) < 0 && !monster->getMode().compare("scatter")){
 			monster->setMode("chase");
 			monster->setTimer(chaseTime);
 		}
-		else
+		else if(monster->getMode().compare("panic"))
 			monster->updateTimer(1);
 
-		if(monster->getTimer(2) < 0 && !monster->getMode().compare("panic")){
-			monster->setMode("panic");
+		if(monster->getTimer(2)<= 0.5 && !monster->getMode().compare("panic"))
+			monster->setColor(sf::Color(255,255,255));
 
-			if(monster->getTimer(2)<=0.5)
-				monster->setColor(sf::Color(255,255,255));
-
-			if(monster->getTimer(2)==0)
-				monster->setMode("chase");
-		}
+		if(monster->getTimer(2) < 0 && !monster->getMode().compare("panic"))
+			monster->setMode("chase");
 		else
 			monster->updateTimer(2);
 
@@ -195,9 +191,10 @@ void Board::monsterMove(){
 				monster->setSpeed(0.55*monster->getSpeed());
 				teleport(*monster);
 			}
-			else{
+			else if(!monster->getMode().compare("panic"))
+				monster->setSpeed(0.77*refSpeed);
+			else
 				monster->setSpeed(0.95*refSpeed);
-			}
 
 			if(monsterTile->isFantomHouse())
 				monsterOutOfHouse(*monster);
@@ -226,7 +223,7 @@ void Board::monsterMove(){
 				monster->setColor(monster->getNominalColor());
 
 			if(monster->eat(pacman.getPosition()) && !monster->getHide() && (!monster->getMode().compare("scatter") || !monster->getMode().compare("chase"))){
-				gameState = -1;
+				gameState = 0;
 				return ;
 			}
 
@@ -251,8 +248,7 @@ void Board::monsterOutOfHouse(Monster &monster) {
 }
 void Board::teleport(Player &p){
 
-	if((p.getDirection() == 'l' && (size_t) p.getY() == 0) || (p.getDirection() == 'r' && (size_t) p.getY() > plate.getLengthCol()-1)){
-
+	if((p.getDirection() == 'l' && (size_t) p.getY() == 0) || (p.getDirection() == 'r' && p.getY() > plate.getLengthCol()-1.5)){
 		std::array<float,2> tmp;
 		tmp[0] = p.getX();
 		tmp[1] = abs(p.getY() - plate.getLengthCol());
@@ -401,15 +397,27 @@ void Board::move(char dir)
 
 	size_t value = 0;
 	bool tooClose = false;
-	float defaultv = pacman.getCurrSpeed();
+	float currv = pacman.getCurrSpeed();
 
 	Tile next = getTileNext(roundedPos[1], roundedPos[0], dir);
 	Tile usualNext = getTileNext(roundedPos[1], roundedPos[0], pacman.getDirection());
 
-	if(next.isPlayable()){
+	bool boost = true;
+	for(auto monster = ingameMonsters.begin();monster != ingameMonsters.end();monster++)
+		if(monster->getMode().compare("panic")){
+			boost = false;
+			break ;
+		}
+
+	if(boost)
+		pacman.setSpeed(currv + 0.05*currv);
+
+	float defaultv = pacman.getSpeed();
+
+	if(next.isPlayable() && (!isPerpendicular(pacman.getDirection(), dir) || isBelowCenter(tmpPos, pacman.getDirection(), 0.12))){
 
 		/* shortcut */
-		if((isBelowCenter(tmpPos, pacman.getDirection()) && isPerpendicular(pacman.getDirection(), dir)) || lastShortcut != 'e'){
+		if((isBelowCenter(tmpPos, pacman.getDirection(), 0) && isPerpendicular(pacman.getDirection(), dir)) || lastShortcut != 'e'){
 
 			if(lastShortcut == 'e'){
 				lastShortcut = pacman.getDirection();
@@ -419,8 +427,6 @@ void Board::move(char dir)
 			pacman.setSpeed(defaultv / sqrt(2));
 			pacman.move(lastShortcut);
 			pacman.move(pacman.getDirection());
-
-			pacman.setSpeed(defaultv);
 
 			Tile newNext = getTileNext(roundedPos[1], roundedPos[0], lastShortcut);
 
@@ -470,9 +476,10 @@ void Board::move(char dir)
 			}
 
 			pacman.move(pacman.getDirection());
-			pacman.setSpeed(defaultv);
 		}
 	}
+
+	pacman.setSpeed(currv);
 
 	value = pacman.eat(plate,ingameMonsters);
 
@@ -490,9 +497,11 @@ void Board::move(char dir)
 
 			if(value == 50){
 				for(auto i=ingameMonsters.begin();i!=ingameMonsters.end();i++){
-						i->setMode("panic");
-						i->setColor(sf::Color(0,0,255));
-						i->setTimer(panicTime);
+						if(i->getMode().compare("eaten")){
+							i->setMode("panic");
+							i->setColor(sf::Color(0,0,255));
+							i->setTimer(panicTime);
+						}
 				}
 			}
 		}	
@@ -511,6 +520,8 @@ void Board::move(char dir)
 
 	if(plate.getNbrFood() == 0)
 		gameState = 1;
+
+	std::cout << pacman.getX() << " " << pacman.getY() << std::endl;
 }
 
 bool Board::isPerpendicular(char x, char y){
@@ -523,16 +534,16 @@ bool Board::isPerpendicular(char x, char y){
 	return false;
 }
 
-bool Board::isBelowCenter(std::array<float,2> p, char direction){
+bool Board::isBelowCenter(std::array<float,2> p, char direction, float tolerance){
 
 	if(direction == 'u')
-		return p[0] - (size_t) p[0] > 0.55;
+		return p[0] - (size_t) p[0] > 0.45 - tolerance;
 	else if(direction == 'd')
-		return p[0] - (size_t) p[0] < 0.45;
+		return p[0] - (size_t) p[0] < 0.55 + tolerance;
 	else if(direction == 'l')
-		return p[1] - (size_t) p[1] > 0.55;
+		return p[1] - (size_t) p[1] > 0.45 - tolerance;
 	else if(direction == 'r')
-		return p[1] - (size_t) p[1] < 0.45;
+		return p[1] - (size_t) p[1] < 0.55 + tolerance;
 	return false;
 }
 

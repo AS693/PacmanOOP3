@@ -39,7 +39,7 @@ private:
 	std::string name;
 	std::string mode;
 	char lastMove;
-
+	bool turnU = false;
 
 };
 char opposite(char c);
